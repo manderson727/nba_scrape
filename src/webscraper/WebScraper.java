@@ -41,61 +41,27 @@ public class WebScraper {
         getConn();
         buildTeamsData(getTeams());
         buildScheduleData(getTeams());
-
-        //https://www.teamrankings.com/nba/trends/ou_trends/
+        buildOUTrends();
+        buildAWOUTrends();
+        buildALOUTrends();
+        createTodaysGamesView();
+                    
+            
         
- 
+
+        
+        
+        
     }   
     
 
     
     
 
-    private static void createTeamsDb() throws SQLException {
-        String url = "jdbc:sqlite:C:/sqlite/db/nba.db";
-            if (c != null) {
-                DatabaseMetaData meta = c.getMetaData();
-                System.out.println("The driver name is " + meta.getDriverName());
-                System.out.println("A new database has been created.");
-            }
 
-    }
-
-    private static void createTeamsTable() {
-       String url = "jdbc:sqlite:C:/sqlite/db/nba.db";
-        
-        // SQL statement for creating a new table
-        String sql = "CREATE TABLE IF NOT EXISTS teamData (\n"
-                + "	id integer PRIMARY KEY,\n"
-                + "	teamname text NOT NULL,\n"
-                + "	streak text NOT NULL\n"
-                + ");";
-        
-        try (Statement stmt = c.createStatement()) {
-            // create a new table
-            stmt.execute(sql);
-            System.out.println("teams table created");
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
-        }
-    }
-
-    private static void insertTeams(String teamname, String streak) {
-       String url = "jdbc:sqlite:C:/sqlite/db/nba.db";
-       String sql = "INSERT INTO teamData(teamname, streak) VALUES(?,?)";
- 
-        try (PreparedStatement pstmt = c.prepareStatement(sql)) {
-            pstmt.setString(1, teamname);
-            pstmt.setString(2, streak);
-            pstmt.executeUpdate();
-        } catch (SQLException e) {
-            System.out.println(e.getMessage());
-        }
-    }
-    
+    //TEAMS
     private static void buildTeamsData(String[] Teams) throws IOException, SQLException {
         
-        createTeamsDb();
         createTeamsTable();     
         
         for(int i=0; i < Teams.length; i++) {
@@ -113,44 +79,42 @@ public class WebScraper {
             }
         }
     }
-
-    private static void buildScheduleData(String[] Teams) throws IOException, SQLException {
+    private static void createTeamsTable() {
         
-        createTeamScheduleTable();
-
-        for(int i=0; i < Teams.length; i++) {
-            
-            String teamLink = "https://www.teamrankings.com/nba/team/" + Teams[i] + "/";
-            //String teamLink = "https://www.teamrankings.com/nba/team/cleveland-cavaliers";
-                        
-            Document doc = Jsoup.connect(teamLink).get();
-            
-            Element table = doc.select(".tr-table.datatable.scrollable").get(0); //select the first table.
-            Elements rows = table.select("tr");
-
-            for (int j = 1; j < rows.size(); j++) { //first row is the col names so skip it.
-                Element row = rows.get(j);
-                Elements cols = row.select("td");
-                Elements cols2 = row.select("td:eq(1) > a");
-                Element link = cols2.first();
-                String url = link.attr("href").replace("/nba/team/", "");
-                
-                //gamedate, teamname, opponent, result, spread, total, money
-                insertShedules(cols.get(0).text(), Teams[i], url, cols.get(2).text(), cols.get(6).text(), cols.get(7).text(), cols.get(8).text());
-                
-            }
+        // SQL statement for creating a new table
+        String sql = "CREATE TABLE IF NOT EXISTS teamData (\n"
+                + "	id integer PRIMARY KEY,\n"
+                + "	teamname text NOT NULL,\n"
+                + "	streak text NOT NULL\n"
+                + ");";
+        
+        try (Statement stmt = c.createStatement()) {
+            // create a new table
+            stmt.execute(sql);
+            System.out.println("teams table created");
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
         }
-}
-
+    }
+    private static void insertTeams(String teamname, String streak) {
+       String sql = "INSERT INTO teamData(teamname, streak) VALUES(?,?)";
+ 
+        try (PreparedStatement pstmt = c.prepareStatement(sql)) {
+            pstmt.setString(1, teamname);
+            pstmt.setString(2, streak);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
     private static String[] getTeams() {
-        String[] Teams = {            
-        "cleveland-cavaliers",
-        "indiana-pacers",
+        String[] Teams = {      
         "atlanta-hawks",
         "boston-celtics",
         "brooklyn-nets",
         "charlotte-hornets",
-        "chicago-bulls",
+        "chicago-bulls",      
+        "cleveland-cavaliers",
         "dallas-mavericks",
         "denver-nuggets",
         "detroit-pistons",
@@ -181,8 +145,35 @@ public class WebScraper {
         
     }
 
+    //SCHEDULES
+    private static void buildScheduleData(String[] Teams) throws IOException, SQLException {
+        
+        createTeamScheduleTable();
+
+        for(int i=0; i < Teams.length; i++) {
+            
+            String teamLink = "https://www.teamrankings.com/nba/team/" + Teams[i] + "/";
+            //String teamLink = "https://www.teamrankings.com/nba/team/cleveland-cavaliers";
+                        
+            Document doc = Jsoup.connect(teamLink).get();
+            
+            Element table = doc.select(".tr-table.datatable.scrollable").get(0); //select the first table.
+            Elements rows = table.select("tr");
+
+            for (int j = 1; j < rows.size(); j++) { //first row is the col names so skip it.
+                Element row = rows.get(j);
+                Elements cols = row.select("td");
+                Elements cols2 = row.select("td:eq(1) > a");
+                Element link = cols2.first();
+                String url = link.attr("href").replace("/nba/team/", "");
+                
+                //gamedate, teamname, opponent, result, spread, total, money
+                insertShedules(cols.get(0).text(), Teams[i], url, cols.get(2).text(), cols.get(6).text(), cols.get(7).text(), cols.get(8).text());
+                
+            }
+        }
+}
     private static void createTeamScheduleTable() {
-        String url = "jdbc:sqlite:C:/sqlite/db/nba.db";
         
         // SQL statement for creating a new table
         String sql = "CREATE TABLE IF NOT EXISTS teamSchedule (\n"
@@ -204,9 +195,7 @@ public class WebScraper {
             System.out.println(e.getMessage());
         }
     }
-
     private static void insertShedules(String gamedate, String teamname, String opponent, String result, String spread, String total, String moneyline) throws IOException, SQLException {
-       String url = "jdbc:sqlite:C:/sqlite/db/nba.db";
        String sql = "INSERT INTO teamSchedule(gamedate, teamname, opponent, result, spread, total, moneyline) VALUES(?,?,?,?,?,?,?)";
  
        //Connection conn = DriverManager.getConnection(url);
@@ -229,13 +218,218 @@ public class WebScraper {
         
     }
     
+    //ALL GAMES OU TRENDS
+    private static void buildOUTrends() throws IOException, SQLException {
+        String teamLink = "https://www.teamrankings.com/nba/trends/ou_trends/";
+        
+        createOUTrendsTable();
+                        
+            Document doc = Jsoup.connect(teamLink).get();
+            
+            Element table = doc.select(".tr-table.datatable.scrollable").get(0); //select the first table.
+            Elements rows = table.select("tr");
+
+            for (int j = 1; j < rows.size(); j++) { //first row is the col names so skip it.
+                Element row = rows.get(j);
+                Elements cols = row.select("td");
+                Elements cols2 = row.select("td:eq(0) > a");
+                Element link = cols2.first();
+                String url = link.attr("href").replace("https://www.teamrankings.com/nba/team/", "");
+                
+//                System.out.println(cols.get(0).text());
+//                System.out.println(cols.get(1).text());
+//                System.out.println(cols.get(2).text());
+//                System.out.println(cols.get(3).text());
+                
+                insertOUTrends(url,cols.get(1).text(),cols.get(2).text(),cols.get(3).text());
+            
+        }
+    }
+    private static void insertOUTrends(String teamname, String overrecord, String overpercent, String underpercent) throws IOException, SQLException {
+       String sql = "INSERT INTO teamOUTrends(teamname, overrecord, overpercent, underpercent) VALUES(?,?,?,?)";
+       
+       try(PreparedStatement pstmt = c.prepareStatement(sql)) {
+            pstmt.setString(1, teamname);
+            pstmt.setString(2, overrecord);
+            pstmt.setString(3, overpercent);
+            pstmt.setString(4, underpercent);
+            pstmt.executeUpdate();
+       } catch (SQLException e) {
+            System.out.println(e.getMessage());
+       }       
+        
+    }
+    private static void createOUTrendsTable() {
+        
+        // SQL statement for creating a new table
+        String sql = "CREATE TABLE IF NOT EXISTS teamOUTrends (\n"
+                + "	id integer PRIMARY KEY,\n"
+                + "	teamname text NOT NULL,\n"
+                + "	overrecord text NOT NULL,\n"
+                + "	overpercent text NOT NULL,\n"
+                + "	underpercent text NOT NULL\n"
+                + ");";
+        
+        try (Statement stmt = c.createStatement()) {
+            // create a new table
+            stmt.execute(sql);
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+    
+    //AFTER WIN GAMES OU TRENDS
+    private static void buildAWOUTrends() throws IOException, SQLException {
+        String teamLink = "https://www.teamrankings.com/nba/trends/ou_trends/?sc=is_after_win";
+        
+        createAWOUTrendsTable();
+                        
+            Document doc = Jsoup.connect(teamLink).get();
+            
+            Element table = doc.select(".tr-table.datatable.scrollable").get(0); //select the first table.
+            Elements rows = table.select("tr");
+
+            for (int j = 1; j < rows.size(); j++) { //first row is the col names so skip it.
+                Element row = rows.get(j);
+                Elements cols = row.select("td");
+                Elements cols2 = row.select("td:eq(0) > a");
+                Element link = cols2.first();
+                String url = link.attr("href").replace("https://www.teamrankings.com/nba/team/", "");
+                
+//                System.out.println(cols.get(0).text());
+//                System.out.println(cols.get(1).text());
+//                System.out.println(cols.get(2).text());
+//                System.out.println(cols.get(3).text());
+                
+                insertAWOUTrends(url,cols.get(1).text(),cols.get(2).text(),cols.get(3).text());
+            
+        }
+    }
+    private static void insertAWOUTrends(String teamname, String overrecord, String overpercent, String underpercent) throws IOException, SQLException {
+       String sql = "INSERT INTO teamAWOUTrends(teamname, overrecord, overpercent, underpercent) VALUES(?,?,?,?)";
+       
+       try(PreparedStatement pstmt = c.prepareStatement(sql)) {
+            pstmt.setString(1, teamname);
+            pstmt.setString(2, overrecord);
+            pstmt.setString(3, overpercent);
+            pstmt.setString(4, underpercent);
+            pstmt.executeUpdate();
+       } catch (SQLException e) {
+            System.out.println(e.getMessage());
+       }       
+        
+    }
+    private static void createAWOUTrendsTable() {
+        
+        // SQL statement for creating a new table
+        String sql = "CREATE TABLE IF NOT EXISTS teamAWOUTrends (\n"
+                + "	id integer PRIMARY KEY,\n"
+                + "	teamname text NOT NULL,\n"
+                + "	overrecord text NOT NULL,\n"
+                + "	overpercent text NOT NULL,\n"
+                + "	underpercent text NOT NULL\n"
+                + ");";
+        
+        try (Statement stmt = c.createStatement()) {
+            // create a new table
+            stmt.execute(sql);
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    
+    //AFTER WIN GAMES OU TRENDS
+    private static void buildALOUTrends() throws IOException, SQLException {
+        String teamLink = "https://www.teamrankings.com/nba/trends/ou_trends/?sc=is_after_loss";
+        
+        createALOUTrendsTable();
+                        
+            Document doc = Jsoup.connect(teamLink).get();
+            
+            Element table = doc.select(".tr-table.datatable.scrollable").get(0); //select the first table.
+            Elements rows = table.select("tr");
+
+            for (int j = 1; j < rows.size(); j++) { //first row is the col names so skip it.
+                Element row = rows.get(j);
+                Elements cols = row.select("td");
+                Elements cols2 = row.select("td:eq(0) > a");
+                Element link = cols2.first();
+                String url = link.attr("href").replace("https://www.teamrankings.com/nba/team/", "");
+                
+//                System.out.println(cols.get(0).text());
+//                System.out.println(cols.get(1).text());
+//                System.out.println(cols.get(2).text());
+//                System.out.println(cols.get(3).text());
+                
+                insertALOUTrends(url,cols.get(1).text(),cols.get(2).text(),cols.get(3).text());
+            
+        }
+    }
+    private static void insertALOUTrends(String teamname, String overrecord, String overpercent, String underpercent) throws IOException, SQLException {
+       String sql = "INSERT INTO teamALOUTrends(teamname, overrecord, overpercent, underpercent) VALUES(?,?,?,?)";
+       
+       try(PreparedStatement pstmt = c.prepareStatement(sql)) {
+            pstmt.setString(1, teamname);
+            pstmt.setString(2, overrecord);
+            pstmt.setString(3, overpercent);
+            pstmt.setString(4, underpercent);
+            pstmt.executeUpdate();
+       } catch (SQLException e) {
+            System.out.println(e.getMessage());
+       }       
+        
+    }
+    private static void createALOUTrendsTable() {
+        
+        // SQL statement for creating a new table
+        String sql = "CREATE TABLE IF NOT EXISTS teamALOUTrends (\n"
+                + "	id integer PRIMARY KEY,\n"
+                + "	teamname text NOT NULL,\n"
+                + "	overrecord text NOT NULL,\n"
+                + "	overpercent text NOT NULL,\n"
+                + "	underpercent text NOT NULL\n"
+                + ");";
+        
+        try (Statement stmt = c.createStatement()) {
+            // create a new table
+            stmt.execute(sql);
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    //VIEWS
+    private static void createTodaysGamesView() {
+        
+        // SQL statement for creating a new table
+        String sql = "CREATE VIEW \"v_TodaysGames\" AS \n"
+                + "	select ts.*, td1.streak as TeamWinStreak, td2.streak as OppWinStreak\n"
+                + "	from teamSchedule ts \n"
+                + "	join teamData td1 on \n"
+                + "	ts.teamname = td1.teamname \n"
+                + "	join teamData td2 on \n"
+                + "	ts.opponent = td2.teamname \n"
+                + "	where ts.gameDate = '01/13' \n"
+                + "	order by ts.teamname\n"
+                + ";";
+        
+        try (Statement stmt = c.createStatement()) {
+            // create a new table
+            stmt.execute(sql);
+            System.out.println("todays games view created");
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+    
+    //CONNECTIONS
     private static Connection c = null;
     public static Connection getConn() throws Exception {
         if(c == null){
         Class.forName("org.sqlite.JDBC");
-        c = DriverManager.getConnection("jdbc:sqlite:C:/sqlite/db/nba.db");
+        c = DriverManager.getConnection("jdbc:sqlite:C:/sqlite/db/nba15.db");
         }
         return c;
     }
-
 }
