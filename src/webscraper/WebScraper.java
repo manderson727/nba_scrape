@@ -428,7 +428,8 @@ public class WebScraper {
     public static Connection getConn() throws Exception {
         if(c == null){
         Class.forName("org.sqlite.JDBC");
-        c = DriverManager.getConnection("jdbc:sqlite:C:/sqlite/db/nba15.db");
+        //c = DriverManager.getConnection("jdbc:sqlite:C:/sqlite/db/nba1.db");
+        c = DriverManager.getConnection("jdbc:sqlite:/home/manderson/JavaProjects/nba_scrape/nba1.db");
         }
         return c;
     }
