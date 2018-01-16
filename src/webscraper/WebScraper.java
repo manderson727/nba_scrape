@@ -429,7 +429,7 @@ public class WebScraper {
         if(c == null){
         Class.forName("org.sqlite.JDBC");
         //c = DriverManager.getConnection("jdbc:sqlite:C:/sqlite/db/nba1.db");
-        c = DriverManager.getConnection("jdbc:sqlite:/home/manderson/JavaProjects/nba_scrape/nba1.db");
+        c = DriverManager.getConnection("jdbc:sqlite:/home/manderson/JavaProjects/nba_scrape/nba2.db");
         }
         return c;
     }
